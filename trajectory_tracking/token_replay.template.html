@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SONIC decoder · Token 重放</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d1821;color:#e6eef4;font:15px/1.7 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1320px;margin:auto;padding:22px 20px 40px}h1{font-size:27px;margin:0}p{margin:6px 0;color:#b3c4d0}video{display:block;width:100%;aspect-ratio:16/9;max-height:75vh;background:#142a3b;border-radius:10px;margin-top:18px}.controls,.metrics{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}button,select{font:inherit;padding:6px 12px;color:#e6eef4;background:#1b2c39;border:1px solid #365063;border-radius:6px;cursor:pointer}.metrics span{padding:8px 14px;border-radius:6px;background:#173a39;color:#b1e8dd}a{color:#7fc8f0}.note{font-size:13px}#status{font-variant-numeric:tabular-nums}@media(max-width:600px){main{padding:16px 10px}h1{font-size:22px}video{max-height:none}}
+</style></head><body><main>
+<h1>SONIC decoder 消费 motion token</h1>
+<p>U 形轨迹 · 独立 decoder 闭环重放 · MuJoCo 物理仿真</p>
+<video id="video" src="robot.mp4" poster="robot-preview.jpg" controls autoplay muted playsinline loop preload="auto"></video>
+<div class="controls"><button id="play">暂停</button><button id="restart">从头看起步</button><button id="stop">看终点站稳</button><label>速度 <select id="rate"><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label><button id="fullscreen">全屏</button><span id="status"></span></div>
+<div class="metrics" id="metrics"></div>
+<p>输入为已录制的 50 Hz motion token 和第一帧机器人初态；后续每步读取 MuJoCo 当前状态，经 decoder 生成关节目标，再由 PD 控制推进物理仿真。</p>
+<p>本次仿真仅加载 decoder，未运行 encoder 或 planner。视频使用本次新仿真生成的机器人状态，包含起步、转弯和结尾站稳过程；黄线仅作为规划路径的可视化参考。</p>
+<p id="validation"></p>
+<p class="note">默认从第 6 秒开始播放。动作计算为 50 Hz，物理步进为 500 Hz，视频为 25 FPS。画面为仿真机器人。</p>
+<p class="note"><a href="summary.json">本次仿真报告</a> · <a href="episode.npz">本次 50 Hz 状态、token 和动作</a> · <a href="/robot-walking/">查看此前 10 条轨迹</a></p>
+</main><script id="data" type="application/json">__DATA__</script><script>
+'use strict';const data=JSON.parse(document.getElementById('data').textContent),video=document.getElementById('video');video.muted=true;
+const labels=[data.frames+' 个 token',data.duration_s.toFixed(2)+' s','终点误差 '+(data.endpoint_error_m*100).toFixed(2)+' cm','朝向误差 '+data.final_heading_error_deg.toFixed(2)+'°'];
+for(const label of labels){const span=document.createElement('span');span.textContent=label;document.getElementById('metrics').appendChild(span);}
+document.getElementById('validation').textContent='核对结果：与原始记录在相同时刻的关节状态、速度、动作及 decoder 输入最大绝对差均为 '+Math.max(...Object.values(data.reference_max_abs_error))+'。';
+video.addEventListener('loadedmetadata',()=>{video.currentTime=Math.min(6,video.duration/3);video.play().catch(()=>{});});
+video.addEventListener('play',()=>document.getElementById('play').textContent='暂停');video.addEventListener('pause',()=>document.getElementById('play').textContent='播放');
+video.addEventListener('timeupdate',()=>document.getElementById('status').textContent=video.currentTime.toFixed(1)+' / '+(Number.isFinite(video.duration)?video.duration.toFixed(1):'—')+' s');
+document.getElementById('play').onclick=()=>video.paused?video.play():video.pause();
+document.getElementById('restart').onclick=()=>{video.currentTime=0;video.play();};
+document.getElementById('stop').onclick=()=>{video.currentTime=Math.max(0,video.duration-5);video.play();};
+document.getElementById('rate').onchange=e=>video.playbackRate=Number(e.target.value);
+document.getElementById('fullscreen').onclick=()=>video.requestFullscreen?video.requestFullscreen():video.webkitEnterFullscreen&&video.webkitEnterFullscreen();
+</script></body></html>

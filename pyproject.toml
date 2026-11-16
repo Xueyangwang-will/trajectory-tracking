@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trajectory-tracking"
+version = "0.1.0"
+description = "GT-odometry trajectory tracking, motion collection, and token replay"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy==2.2.6",
+    "scipy==1.15.3",
+    "mujoco==3.17.0",
+    "onnxruntime==1.23.2",
+    "matplotlib==3.10.9",
+    "Pillow==12.3.0",
+    "imageio==2.38.0",
+    "imageio-ffmpeg==0.8.1",
+]
+
+[project.optional-dependencies]
+setup = ["huggingface_hub==2.4.0"]
+
+[project.scripts]
+trajectory-collect = "trajectory_tracking.collect:main"
+trajectory-replay = "trajectory_tracking.run_token_decoder:main"
+trajectory-routes = "trajectory_tracking.generate_routes:main"
+trajectory-render = "trajectory_tracking.render_robot:main"
+
+[tool.setuptools.packages.find]
+include = ["trajectory_tracking*"]
+
+[tool.setuptools.package-data]
+trajectory_tracking = ["*.html"]
